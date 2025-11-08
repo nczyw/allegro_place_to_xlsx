@@ -143,7 +143,7 @@ fn parse_placement(content: &str) -> (Vec<PlacementEntry>, Vec<String>) {
         let mirror = parts[4].trim();
         let footprint = format!("'{}", parts[5].trim()); // 在Footprint前添加'防止0被优化
         
-        // 确定Layer列的值：如果mirror为空则为T，否则为B
+        // 确定Layer列的值:如果mirror为空则为T，否则为B
         let layer = if mirror.is_empty() { "T".to_string() } else { "B".to_string() };
         
         placement_entries.push(PlacementEntry {
