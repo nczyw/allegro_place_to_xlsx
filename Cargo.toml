@@ -1,0 +1,13 @@
+[package]
+name = "allegro_place_to_xlsx"
+version = "1.0.0"
+edition = "2024"
+authors = ["WenJun"]
+description = "Convert Allegro PCB placement file to Excel spreadsheet"
+
+[build-dependencies]
+chrono = "0.4.42"
+
+[dependencies]
+clap = { version = "4.5.51", features = ["derive"] }
+umya-spreadsheet = "2.3.3"
