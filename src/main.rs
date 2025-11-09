@@ -5,21 +5,28 @@ use clap::CommandFactory;
 
 #[derive(Parser, Debug)]
 #[command(
-    name = env!("CARGO_PKG_NAME"),
-    version = concat!(env!("BUILD_DATE"), " Ver", env!("CARGO_PKG_VERSION")),
-    author = env!("CARGO_PKG_AUTHORS"),
-    about = env!("CARGO_PKG_DESCRIPTION"),
-    after_help = concat!(
-        "Version: ",
-        env!("BUILD_DATE"),
-        " Ver",
-        env!("CARGO_PKG_VERSION"),
-        "\n\nCopyright (c) 2020–",
-        env!("BUILD_YEAR"),
-        " ",
-        env!("CARGO_PKG_AUTHORS"),
-        ". All rights reserved."
-    )
+    name = concat!(
+        env!("BUILD_NAME"),
+    ) ,
+    version = concat!(
+        env!("BUILD_VERSION"),
+    ),
+    author = concat!(
+        env!("BUILD_AUTHOR"),
+    ),
+    about = concat!(
+        env!("BUILD_ABOUT"),
+    ),
+    long_about = concat!(
+        env!("BUILD_ABOUT"), "\n",
+        "Program: ", env!("BUILD_NAME"), "\n",
+        "Version: ", env!("BUILD_VERSION"), "\n",
+        "Author: ", env!("BUILD_AUTHOR"), "\n",
+        "Build Time: ", env!("BUILD_TIME"), "\n",
+        "Build sHash:", env!("BUILD_SHASH"), "\n",
+        "Build lHash:", env!("BUILD_LHASH"), "\n",
+    ),
+    after_help = env!("BUILD_COPYRIGHT"),
 )]
 struct Args {
     /// Input file path
@@ -48,7 +55,7 @@ fn main() {
         Err(e) => {
             if e.use_stderr(){
                 eprintln!("{}",e);
-                println!("Print help");
+                //println!("Print help");
                 Args::command().print_help().unwrap();
                 std::process::exit(0); 
             }

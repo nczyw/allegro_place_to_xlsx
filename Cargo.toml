@@ -2,8 +2,7 @@
 name = "allegro_place_to_xlsx"
 version = "1.0.0"
 edition = "2024"
-authors = ["WenJun"]
-description = "Convert Allegro PCB placement file to Excel spreadsheet"
+description  = "Convert Allegro PCB placement file to Excel spreadsheet"
 
 [build-dependencies]
 chrono = "0.4.42"
