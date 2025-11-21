@@ -88,10 +88,10 @@ fn main() {
     };
     
     // 解析放置数据
-    let (placement_data, headers) = parse_placement(&content);
+    let (placement_data, headers, metadata) = parse_placement(&content);
     
     // 将数据写入XLSX文件
-    if let Err(e) = write_to_xlsx(&placement_data, &headers, &output_file_str) {
+    if let Err(e) = write_to_xlsx(&placement_data, &headers, &metadata, &output_file_str) {
         eprintln!("Error writing to xlsx file '{}': {}", output_file_str, e);
         std::process::exit(0); // 返回0而不是错误代码
     }
@@ -122,17 +122,33 @@ fn ensure_xlsx_extension(path: &PathBuf) -> PathBuf {
     path
 }
 
-fn parse_placement(content: &str) -> (Vec<PlacementEntry>, Vec<String>) {
+fn parse_placement(content: &str) -> (Vec<PlacementEntry>, Vec<String>, Vec<String>) {
     let mut placement_entries = Vec::new();
-    let headers = vec!["Designator", "Mid x", "Mid y", "Rotation", "Layer", "Footprint"]
-        .iter()
-        .map(|s| s.to_string())
-        .collect::<Vec<String>>();
+    let mut metadata = Vec::new(); // 存储头部元数据
+    let mut lines = content.lines();
     
-    // 解析数据行
-    for line in content.lines() {
-        // 跳过空行和注释行
-        if line.trim().is_empty() || line.starts_with("VERSION") || line.starts_with("#") || line.starts_with("---") {
+    // 读取头部信息：从文件开头到第一个以 # 开头的非空行
+    while let Some(line) = lines.next() {
+        let trimmed = line.trim();
+        if trimmed.starts_with("#") {
+            // 遇到第一个 # 开头的行，停止读取头部
+            break;
+        }
+        // 保留所有其他行（包括空行）作为元数据
+        if !line.is_empty(){
+            metadata.push(line.to_string());
+        }
+    }
+    
+    // 跳过注释行和分隔线（以 # 或 --- 开头的行）
+    for line in &mut lines {
+        let trimmed = line.trim();
+        if trimmed.starts_with("#") || trimmed.starts_with("---") {
+            continue;
+        }
+        
+        // 跳过空行
+        if trimmed.is_empty() {
             continue;
         }
         
@@ -163,10 +179,15 @@ fn parse_placement(content: &str) -> (Vec<PlacementEntry>, Vec<String>) {
         });
     }
     
-    (placement_entries, headers)
+    let headers = vec!["Designator", "Mid x", "Mid y", "Rotation", "Layer", "Footprint"]
+        .iter()
+        .map(|s| s.to_string())
+        .collect::<Vec<String>>();
+    
+    (placement_entries, headers, metadata)
 }
 
-fn write_to_xlsx(placement_data: &[PlacementEntry], headers: &[String], output_file: &str) -> Result<(), Box<dyn std::error::Error>> {
+fn write_to_xlsx(placement_data: &[PlacementEntry], headers: &[String], metadata: &[String], output_file: &str) -> Result<(), Box<dyn std::error::Error>> {
     use umya_spreadsheet::*;
     use std::path::Path;
 
@@ -177,17 +198,26 @@ fn write_to_xlsx(placement_data: &[PlacementEntry], headers: &[String], output_f
     let sheet = book.get_sheet_by_name_mut("Sheet1").unwrap();
     sheet.set_name("Placement");
 
-    // 设置表头 - 使用预定义的表头
+    // 写入元数据（VERSION、UUNITS等）从第1行开始
+    for (i, meta_line) in metadata.iter().enumerate() {
+        book.get_sheet_by_name_mut("Placement")
+            .unwrap()
+            .get_cell_mut((1, (i + 1) as u32))
+            .set_value(meta_line);
+    }
+
+    // 设置表头 - 使用预定义的表头，从元数据行数之后开始
+    let header_start_row = (metadata.len() + 1) as u32;
     for (i, header) in headers.iter().enumerate() {
         book.get_sheet_by_name_mut("Placement")
             .unwrap()
-            .get_cell_mut(((i + 1) as u32, 1 as u32))
+            .get_cell_mut(((i + 1) as u32, header_start_row))
             .set_value(header);
     }
 
     // 写入数据行
     for (row_index, entry) in placement_data.iter().enumerate() {
-        let row = (row_index + 2) as u32; // 从第2行开始(第1行是表头)
+        let row = (row_index + 1 + metadata.len() + 1) as u32; // 从表头行之后开始(元数据行数+1+数据行数)
         let sheet = book.get_sheet_by_name_mut("Placement").unwrap();
         
         sheet.get_cell_mut((1, row)).set_value(&entry.designator);
